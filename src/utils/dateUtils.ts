@@ -29,4 +29,3 @@ export const formatDate = (
   const date = ensureDate(dateValue);
   return date.toLocaleDateString(undefined, options);
 };
-

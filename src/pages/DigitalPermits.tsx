@@ -1,15 +1,15 @@
+
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { QrCode, Download, Printer, UserPlus, Loader2 } from "lucide-react";
+import { QrCode } from "lucide-react";
 import { api } from "@/services/api";
 import { ExamPermit, ExamTimetable } from "@/types/exam";
 import Navbar from "@/components/layout/Navbar";
-import { ensureDate } from "@/utils/dateUtils";
+import PermitGenerationForm from "@/components/digital-permits/PermitGenerationForm";
+import PermitDisplayPanel from "@/components/digital-permits/PermitDisplayPanel";
+import PermitSearchForm from "@/components/digital-permits/PermitSearchForm";
+import PermitLibrary from "@/components/digital-permits/PermitLibrary";
 
 const DigitalPermits = () => {
   const { toast } = useToast();
@@ -17,7 +17,6 @@ const DigitalPermits = () => {
   const [timetables, setTimetables] = useState<ExamTimetable[]>([]);
   const [selectedTimetable, setSelectedTimetable] = useState<string>("");
   const [studentIds, setStudentIds] = useState<string[]>([]);
-  const [newStudentId, setNewStudentId] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [permits, setPermits] = useState<ExamPermit[]>([]);
   
@@ -44,27 +43,8 @@ const DigitalPermits = () => {
     fetchTimetables();
   }, [toast]);
   
-  const handleAddStudent = () => {
-    if (!newStudentId.trim()) {
-      toast({
-        title: "Error",
-        description: "Student ID cannot be empty",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    if (studentIds.includes(newStudentId)) {
-      toast({
-        title: "Duplicate ID",
-        description: "This student ID is already in the list",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    setStudentIds([...studentIds, newStudentId]);
-    setNewStudentId("");
+  const handleAddStudent = (studentId: string) => {
+    setStudentIds([...studentIds, studentId]);
   };
   
   const handleRemoveStudent = (idToRemove: string) => {
@@ -138,260 +118,25 @@ const DigitalPermits = () => {
             
             <TabsContent value="generate">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Permit Generation</CardTitle>
-                    <CardDescription>
-                      Select a timetable and add students to generate permits
-                    </CardDescription>
-                  </CardHeader>
-                  
-                  <CardContent className="space-y-6">
-                    {isLoading ? (
-                      <div className="flex justify-center py-8">
-                        <Loader2 className="h-8 w-8 animate-spin text-exam-primary" />
-                      </div>
-                    ) : timetables.length === 0 ? (
-                      <div className="text-center py-8">
-                        <p className="text-gray-500 mb-4">No timetables available</p>
-                        <Button 
-                          onClick={() => window.location.href = '/upload'}
-                          variant="outline"
-                        >
-                          Upload Timetable
-                        </Button>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="space-y-2">
-                          <Label htmlFor="timetable">Select Timetable</Label>
-                          <select
-                            id="timetable"
-                            value={selectedTimetable}
-                            onChange={(e) => setSelectedTimetable(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                          >
-                            {timetables.map((timetable) => (
-                              <option key={timetable.id} value={timetable.id}>
-                                {timetable.name} - {timetable.semester} {timetable.academicYear}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label>Student IDs</Label>
-                          <div className="flex space-x-2">
-                            <Input
-                              placeholder="Enter student ID"
-                              value={newStudentId}
-                              onChange={(e) => setNewStudentId(e.target.value)}
-                              onKeyDown={(e) => e.key === 'Enter' && handleAddStudent()}
-                            />
-                            <Button
-                              onClick={handleAddStudent}
-                              variant="outline"
-                              className="shrink-0"
-                            >
-                              <UserPlus className="h-4 w-4" />
-                            </Button>
-                          </div>
-                          
-                          <div className="border rounded-md mt-2">
-                            {studentIds.length === 0 ? (
-                              <div className="p-4 text-center text-gray-500">
-                                No students added yet
-                              </div>
-                            ) : (
-                              <ul className="divide-y max-h-40 overflow-y-auto">
-                                {studentIds.map((id) => (
-                                  <li key={id} className="flex justify-between items-center px-4 py-2">
-                                    <span>{id}</span>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleRemoveStudent(id)}
-                                    >
-                                      &times;
-                                    </Button>
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </CardContent>
-                  
-                  <CardFooter>
-                    <Button 
-                      onClick={handleGeneratePermits} 
-                      disabled={isLoading || isGenerating || studentIds.length === 0 || !selectedTimetable}
-                      className="w-full bg-exam-primary hover:bg-exam-accent"
-                    >
-                      {isGenerating ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Generating...
-                        </>
-                      ) : (
-                        "Generate Digital Permits"
-                      )}
-                    </Button>
-                  </CardFooter>
-                </Card>
+                <PermitGenerationForm
+                  isLoading={isLoading}
+                  isGenerating={isGenerating}
+                  timetables={timetables}
+                  selectedTimetable={selectedTimetable}
+                  studentIds={studentIds}
+                  onTimetableChange={setSelectedTimetable}
+                  onAddStudent={handleAddStudent}
+                  onRemoveStudent={handleRemoveStudent}
+                  onGeneratePermits={handleGeneratePermits}
+                />
                 
-                <div>
-                  {permits.length > 0 ? (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Generated Permits</CardTitle>
-                        <CardDescription>
-                          {permits.length} permits have been generated
-                        </CardDescription>
-                      </CardHeader>
-                      
-                      <CardContent>
-                        <div className="max-h-[400px] overflow-y-auto border rounded-md">
-                          <table className="w-full text-sm">
-                            <thead className="bg-gray-50 sticky top-0">
-                              <tr>
-                                <th className="px-4 py-2 text-left">Student</th>
-                                <th className="px-4 py-2 text-left">Course</th>
-                                <th className="px-4 py-2 text-left">Date & Time</th>
-                                <th className="px-4 py-2 text-left">QR Code</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y">
-                              {permits.map((permit) => (
-                                <tr key={permit.id}>
-                                  <td className="px-4 py-2">{permit.studentName}</td>
-                                  <td className="px-4 py-2">{permit.courseName}</td>
-                                  <td className="px-4 py-2">
-                                    {ensureDate(permit.examDate).toLocaleDateString()} {permit.examTime}
-                                  </td>
-                                  <td className="px-4 py-2">
-                                    <QrCode className="h-6 w-6 text-exam-primary" />
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </CardContent>
-                      
-                      <CardFooter className="flex justify-between">
-                        <Button variant="outline" className="flex items-center">
-                          <Download className="mr-2 h-4 w-4" />
-                          Download All
-                        </Button>
-                        <Button variant="outline" className="flex items-center">
-                          <Printer className="mr-2 h-4 w-4" />
-                          Print All
-                        </Button>
-                      </CardFooter>
-                    </Card>
-                  ) : (
-                    <Card className="h-full flex flex-col items-center justify-center text-center p-8 border-dashed">
-                      <QrCode className="h-12 w-12 text-gray-300 mb-4" />
-                      <h3 className="text-xl font-medium text-gray-500 mb-2">No Permits Generated</h3>
-                      <p className="text-gray-400">
-                        Select a timetable, add student IDs, and click "Generate Digital Permits"
-                        to create QR code permits.
-                      </p>
-                    </Card>
-                  )}
-                </div>
+                <PermitDisplayPanel permits={permits} />
               </div>
             </TabsContent>
             
             <TabsContent value="view">
-              <Card className="mb-8">
-                <CardHeader>
-                  <CardTitle>Search Permits</CardTitle>
-                  <CardDescription>
-                    Look up permits by student ID or course
-                  </CardDescription>
-                </CardHeader>
-                
-                <CardContent>
-                  <div className="flex space-x-4">
-                    <div className="flex-1">
-                      <Label htmlFor="student-search" className="mb-2 block">Student ID</Label>
-                      <Input id="student-search" placeholder="Enter student ID" />
-                    </div>
-                    <div className="flex-1">
-                      <Label htmlFor="course-search" className="mb-2 block">Course</Label>
-                      <Input id="course-search" placeholder="Enter course name or ID" />
-                    </div>
-                    <div className="flex items-end">
-                      <Button className="bg-exam-primary hover:bg-exam-accent">Search</Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>Permit Library</CardTitle>
-                  <CardDescription>All generated permits in the system</CardDescription>
-                </CardHeader>
-                
-                <CardContent>
-                  {permits.length > 0 ? (
-                    <div className="border rounded-md overflow-hidden">
-                      <table className="w-full text-sm">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th className="px-4 py-2 text-left">Student</th>
-                            <th className="px-4 py-2 text-left">Course</th>
-                            <th className="px-4 py-2 text-left">Date & Time</th>
-                            <th className="px-4 py-2 text-left">Location</th>
-                            <th className="px-4 py-2 text-left">Valid</th>
-                            <th className="px-4 py-2 text-left">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y">
-                          {permits.map((permit) => (
-                            <tr key={permit.id}>
-                              <td className="px-4 py-2">{permit.studentName}</td>
-                              <td className="px-4 py-2">{permit.courseName}</td>
-                              <td className="px-4 py-2">
-                                {ensureDate(permit.examDate).toLocaleDateString()} {permit.examTime}
-                              </td>
-                              <td className="px-4 py-2">{permit.examLocation}</td>
-                              <td className="px-4 py-2">
-                                {permit.isValid ? (
-                                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                                    Valid
-                                  </span>
-                                ) : (
-                                  <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">
-                                    Invalid
-                                  </span>
-                                )}
-                              </td>
-                              <td className="px-4 py-2">
-                                <Button variant="ghost" size="sm">
-                                  <QrCode className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="sm">
-                                  <Download className="h-4 w-4" />
-                                </Button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <p className="text-gray-500">No permits have been generated yet</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <PermitSearchForm />
+              <PermitLibrary permits={permits} />
             </TabsContent>
           </Tabs>
         </div>
