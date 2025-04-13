@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
@@ -7,6 +6,7 @@ import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2 } from "lucide-react
 import { api } from "@/services/api";
 import { ExamTimetable } from "@/types/exam";
 import Navbar from "@/components/layout/Navbar";
+import { formatDate } from "@/utils/dateUtils";
 
 const UploadTimetable = () => {
   const { toast } = useToast();
@@ -18,7 +18,6 @@ const UploadTimetable = () => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
       
-      // Check if file is an Excel or CSV file
       const validExtensions = ['.xlsx', '.xls', '.csv'];
       const fileExtension = selectedFile.name.substring(selectedFile.name.lastIndexOf('.')).toLowerCase();
       
@@ -193,9 +192,8 @@ const UploadTimetable = () => {
                             <tr key={course.id}>
                               <td className="px-4 py-2">{course.name}</td>
                               <td className="px-4 py-2">
-                                {course.examDate?.toLocaleDateString() || 'TBD'}
+                                {formatDate(course.examDate)} {course.examTime}
                               </td>
-                              <td className="px-4 py-2">{course.examTime || 'TBD'}</td>
                               <td className="px-4 py-2">{course.examLocation || 'TBD'}</td>
                             </tr>
                           ))}

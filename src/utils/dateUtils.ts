@@ -15,3 +15,18 @@ export const ensureDate = (dateValue: Date | string | undefined): Date => {
   
   return dateValue;
 };
+
+/**
+ * Formats a date value as a localized date string
+ * @param dateValue - Date object, ISO string, or any date-like value
+ * @param options - Options for date formatting
+ * @returns A formatted date string
+ */
+export const formatDate = (
+  dateValue: Date | string | undefined, 
+  options?: Intl.DateTimeFormatOptions
+): string => {
+  const date = ensureDate(dateValue);
+  return date.toLocaleDateString(undefined, options);
+};
+

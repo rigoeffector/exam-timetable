@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,139 +6,171 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { BrainCircuit, Loader2 } from "lucide-react";
+import { CalendarIcon, CheckCircle, XCircle, Loader2, BrainCircuit } from "lucide-react";
 import { api } from "@/services/api";
-import { ExamTimetable } from "@/types/exam";
+import { ExamTimetable, Course } from "@/types/exam";
 import Navbar from "@/components/layout/Navbar";
+import { formatDate } from "@/utils/dateUtils";
 
 const GenerateTimetable = () => {
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedTimetable, setGeneratedTimetable] = useState<ExamTimetable | null>(null);
   
-  // Form state
-  const [academicYear, setAcademicYear] = useState("2025");
-  const [semester, setSemester] = useState("Spring");
-  const [examPeriodDays, setExamPeriodDays] = useState(14);
-  const [coursesCount, setCoursesCount] = useState(8);
+  const [semester, setSemester] = useState("Fall");
+  const [academicYear, setAcademicYear] = useState(new Date().getFullYear().toString());
+  const [numCourses, setNumCourses] = useState(5);
+  const [totalDuration, setTotalDuration] = useState([300]);
+  const [locationDiversity, setLocationDiversity] = useState([50]);
+  const [timeDiversity, setTimeDiversity] = useState([50]);
   
-  const handleGenerate = async () => {
+  const handleGenerateTimetable = async () => {
     setIsGenerating(true);
     
     try {
-      const timetable = await api.generateTimetable({
-        academicYear,
+      const parameters = {
         semester,
-        examPeriodDays,
-        courses: coursesCount
-      });
+        academicYear,
+        numCourses,
+        totalDuration: totalDuration[0],
+        locationDiversity: locationDiversity[0] / 100,
+        timeDiversity: timeDiversity[0] / 100,
+      };
       
+      const timetable = await api.generateTimetable(parameters);
       setGeneratedTimetable(timetable);
+      
       toast({
-        title: "Timetable generated",
-        description: "AI has successfully created an optimized exam schedule."
+        title: "Timetable Generated",
+        description: "New timetable has been generated successfully!",
+        duration: 5000,
       });
-    } catch (error) {
-      console.error("Generation error:", error);
+    } catch (error: any) {
+      console.error("Error generating timetable:", error);
       toast({
-        title: "Generation failed",
-        description: "There was an error generating the timetable.",
-        variant: "destructive"
+        title: "Error",
+        description: error.message || "Failed to generate timetable",
+        variant: "destructive",
       });
     } finally {
       setIsGenerating(false);
     }
   };
-
+  
   return (
     <div className="min-h-screen bg-exam-background">
       <Navbar />
       
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-3xl mx-auto">
           <div className="flex items-center mb-6">
             <BrainCircuit className="h-8 w-8 text-exam-primary mr-3" />
             <h1 className="text-3xl font-bold text-exam-primary">
-              AI Exam Schedule Generator
+              AI Timetable Generator
             </h1>
           </div>
           
           <p className="text-gray-600 mb-8">
-            Let our AI system generate an optimized exam schedule based on your requirements.
-            The system will ensure minimal conflicts and optimal spacing between exams.
+            Customize the parameters below to generate an optimized exam timetable using AI.
+            Adjust the settings to fit your institution's specific needs and preferences.
           </p>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 gap-8">
             <Card>
               <CardHeader>
                 <CardTitle>Generation Parameters</CardTitle>
                 <CardDescription>
-                  Configure the settings for your AI-generated timetable
+                  Configure the settings to tailor the exam timetable generation
                 </CardDescription>
               </CardHeader>
               
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="semester">Semester</Label>
+                    <Select value={semester} onValueChange={setSemester}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select Semester" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Fall">Fall</SelectItem>
+                        <SelectItem value="Spring">Spring</SelectItem>
+                        <SelectItem value="Summer">Summer</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="academic-year">Academic Year</Label>
+                    <Input
+                      id="academic-year"
+                      placeholder="Enter year"
+                      value={academicYear}
+                      onChange={(e) => setAcademicYear(e.target.value)}
+                    />
+                  </div>
+                </div>
+                
                 <div className="space-y-2">
-                  <Label htmlFor="academic-year">Academic Year</Label>
+                  <Label htmlFor="num-courses">Number of Courses</Label>
                   <Input
-                    id="academic-year"
-                    value={academicYear}
-                    onChange={(e) => setAcademicYear(e.target.value)}
+                    id="num-courses"
+                    type="number"
+                    placeholder="Enter number of courses"
+                    value={numCourses}
+                    onChange={(e) => setNumCourses(parseInt(e.target.value))}
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="semester">Semester</Label>
-                  <Select
-                    value={semester}
-                    onValueChange={setSemester}
-                  >
-                    <SelectTrigger id="semester">
-                      <SelectValue placeholder="Select semester" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Fall">Fall</SelectItem>
-                      <SelectItem value="Spring">Spring</SelectItem>
-                      <SelectItem value="Summer">Summer</SelectItem>
-                      <SelectItem value="Winter">Winter</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <Label htmlFor="exam-period">Exam Period (days)</Label>
-                    <span className="text-sm text-gray-500">{examPeriodDays} days</span>
-                  </div>
+                  <Label htmlFor="total-duration">Total Exam Duration (minutes)</Label>
                   <Slider
-                    id="exam-period"
-                    min={7}
-                    max={30}
-                    step={1}
-                    value={[examPeriodDays]}
-                    onValueChange={(value) => setExamPeriodDays(value[0])}
+                    id="total-duration"
+                    defaultValue={totalDuration}
+                    max={720}
+                    step={30}
+                    onValueChange={setTotalDuration}
                   />
+                  <p className="text-sm text-gray-500">
+                    Selected Duration: {totalDuration[0]} minutes
+                  </p>
                 </div>
                 
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <Label htmlFor="courses-count">Number of Courses</Label>
-                    <span className="text-sm text-gray-500">{coursesCount} courses</span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="location-diversity">Location Diversity (%)</Label>
+                    <Slider
+                      id="location-diversity"
+                      defaultValue={locationDiversity}
+                      max={100}
+                      step={10}
+                      onValueChange={setLocationDiversity}
+                    />
+                    <p className="text-sm text-gray-500">
+                      Selected Diversity: {locationDiversity[0]}%
+                    </p>
                   </div>
-                  <Slider
-                    id="courses-count"
-                    min={3}
-                    max={20}
-                    step={1}
-                    value={[coursesCount]}
-                    onValueChange={(value) => setCoursesCount(value[0])}
-                  />
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="time-diversity">Time Diversity (%)</Label>
+                    <Slider
+                      id="time-diversity"
+                      defaultValue={timeDiversity}
+                      max={100}
+                      step={10}
+                      onValueChange={setTimeDiversity}
+                    />
+                    <p className="text-sm text-gray-500">
+                      Selected Diversity: {timeDiversity[0]}%
+                    </p>
+                  </div>
                 </div>
               </CardContent>
               
               <CardFooter>
-                <Button 
-                  onClick={handleGenerate} 
+                <Button
+                  onClick={handleGenerateTimetable}
                   disabled={isGenerating}
                   className="w-full bg-exam-primary hover:bg-exam-accent"
                 >
@@ -155,73 +186,67 @@ const GenerateTimetable = () => {
               </CardFooter>
             </Card>
             
-            <div>
-              {isGenerating ? (
-                <Card className="h-full flex flex-col items-center justify-center text-center p-8">
-                  <Loader2 className="h-12 w-12 text-exam-primary animate-spin mb-4" />
-                  <h3 className="text-xl font-medium mb-2">AI is working...</h3>
-                  <p className="text-gray-500">
-                    Our AI is creating an optimized exam schedule based on your parameters.
-                    This may take a few moments.
-                  </p>
-                </Card>
-              ) : generatedTimetable ? (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Generated Timetable</CardTitle>
-                    <CardDescription>
-                      AI-optimized schedule for {generatedTimetable.semester} {generatedTimetable.academicYear}
-                    </CardDescription>
-                  </CardHeader>
-                  
-                  <CardContent>
-                    <div className="max-h-[400px] overflow-y-auto border rounded-md">
-                      <table className="w-full text-sm">
-                        <thead className="bg-gray-50 sticky top-0">
-                          <tr>
-                            <th className="px-4 py-2 text-left">Course</th>
-                            <th className="px-4 py-2 text-left">Date</th>
-                            <th className="px-4 py-2 text-left">Time</th>
-                            <th className="px-4 py-2 text-left">Location</th>
+            {generatedTimetable && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Generated Timetable</CardTitle>
+                  <CardDescription>
+                    Review the generated timetable details below
+                  </CardDescription>
+                </CardHeader>
+                
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Course
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Date & Time
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Location
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Duration
+                          </th>
+                        </tr>
+                      </thead>
+                      
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {generatedTimetable.courses.map((course) => (
+                          <tr key={course.id}>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{course.name}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">
+                                {formatDate(course.examDate)} {course.examTime}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{course.examLocation}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{course.duration} minutes</div>
+                            </td>
                           </tr>
-                        </thead>
-                        <tbody className="divide-y">
-                          {generatedTimetable.courses.map((course) => (
-                            <tr key={course.id}>
-                              <td className="px-4 py-2">{course.name}</td>
-                              <td className="px-4 py-2">
-                                {course.examDate?.toLocaleDateString()}
-                              </td>
-                              <td className="px-4 py-2">{course.examTime}</td>
-                              <td className="px-4 py-2">{course.examLocation}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </CardContent>
-                  
-                  <CardFooter className="flex justify-between">
-                    <Button variant="outline">Download</Button>
-                    <Button
-                      className="bg-exam-primary hover:bg-exam-accent"
-                      onClick={() => window.location.href = '/permits'}
-                    >
-                      Generate Permits
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ) : (
-                <Card className="h-full flex flex-col items-center justify-center text-center p-8 border-dashed">
-                  <BrainCircuit className="h-12 w-12 text-gray-300 mb-4" />
-                  <h3 className="text-xl font-medium text-gray-500 mb-2">No Timetable Yet</h3>
-                  <p className="text-gray-400">
-                    Configure the parameters and click "Generate Timetable" to create an 
-                    AI-optimized exam schedule.
-                  </p>
-                </Card>
-              )}
-            </div>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+                
+                <CardFooter className="justify-end">
+                  <Button variant="outline">
+                    <Download className="mr-2 h-4 w-4" />
+                    Download Timetable
+                  </Button>
+                </CardFooter>
+              </Card>
+            )}
           </div>
         </div>
       </div>
@@ -230,3 +255,5 @@ const GenerateTimetable = () => {
 };
 
 export default GenerateTimetable;
+
+import { Download } from "lucide-react";
