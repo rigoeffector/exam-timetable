@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +9,7 @@ import { QrCode, Download, Printer, UserPlus, Loader2 } from "lucide-react";
 import { api } from "@/services/api";
 import { ExamPermit, ExamTimetable } from "@/types/exam";
 import Navbar from "@/components/layout/Navbar";
-import { useEffect } from "react";
+import { ensureDate } from "@/utils/dateUtils";
 
 const DigitalPermits = () => {
   const { toast } = useToast();
@@ -23,7 +22,6 @@ const DigitalPermits = () => {
   const [permits, setPermits] = useState<ExamPermit[]>([]);
   
   useEffect(() => {
-    // Load timetables when the component mounts
     const fetchTimetables = async () => {
       try {
         const fetchedTimetables = await api.getAllTimetables();
@@ -271,7 +269,7 @@ const DigitalPermits = () => {
                                   <td className="px-4 py-2">{permit.studentName}</td>
                                   <td className="px-4 py-2">{permit.courseName}</td>
                                   <td className="px-4 py-2">
-                                    {permit.examDate.toLocaleDateString()} {permit.examTime}
+                                    {ensureDate(permit.examDate).toLocaleDateString()} {permit.examTime}
                                   </td>
                                   <td className="px-4 py-2">
                                     <QrCode className="h-6 w-6 text-exam-primary" />
@@ -360,7 +358,7 @@ const DigitalPermits = () => {
                               <td className="px-4 py-2">{permit.studentName}</td>
                               <td className="px-4 py-2">{permit.courseName}</td>
                               <td className="px-4 py-2">
-                                {permit.examDate.toLocaleDateString()} {permit.examTime}
+                                {ensureDate(permit.examDate).toLocaleDateString()} {permit.examTime}
                               </td>
                               <td className="px-4 py-2">{permit.examLocation}</td>
                               <td className="px-4 py-2">

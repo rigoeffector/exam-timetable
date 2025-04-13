@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,7 @@ import { QrCode, Camera, XCircle, CheckCircle, Loader2 } from "lucide-react";
 import { api } from "@/services/api";
 import { ExamPermit } from "@/types/exam";
 import Navbar from "@/components/layout/Navbar";
+import { ensureDate } from "@/utils/dateUtils";
 
 const VerifyPermit = () => {
   const { toast } = useToast();
@@ -196,7 +196,7 @@ const VerifyPermit = () => {
                             <div className="text-sm">{verificationResult.permit.courseName}</div>
                             
                             <div className="text-sm font-medium">Date:</div>
-                            <div className="text-sm">{verificationResult.permit.examDate.toLocaleDateString()}</div>
+                            <div className="text-sm">{ensureDate(verificationResult.permit.examDate).toLocaleDateString()}</div>
                             
                             <div className="text-sm font-medium">Time:</div>
                             <div className="text-sm">{verificationResult.permit.examTime}</div>

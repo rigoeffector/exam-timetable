@@ -35,7 +35,7 @@ const Navbar = () => {
           </Link>
           
           <Link to="/verify">
-            <Button variant="primary" className="bg-exam-primary hover:bg-exam-accent text-white">
+            <Button variant="default" className="bg-exam-primary hover:bg-exam-accent text-white">
               Verify Student
             </Button>
           </Link>

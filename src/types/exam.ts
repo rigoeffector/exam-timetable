@@ -9,7 +9,7 @@ export interface Student {
 export interface Course {
   id: string;
   name: string;
-  examDate?: Date;
+  examDate?: Date | string; // Allow both Date objects and ISO strings
   examTime?: string;
   examLocation?: string;
   duration: number; // in minutes
@@ -21,8 +21,8 @@ export interface ExamTimetable {
   semester: string;
   academicYear: string;
   courses: Course[];
-  createdAt: Date;
-  lastModified: Date;
+  createdAt: Date | string; // Allow both Date objects and ISO strings
+  lastModified: Date | string; // Allow both Date objects and ISO strings
 }
 
 export interface ExamPermit {
@@ -31,7 +31,7 @@ export interface ExamPermit {
   studentName: string;
   courseId: string;
   courseName: string;
-  examDate: Date;
+  examDate: Date | string; // Allow both Date objects and ISO strings
   examTime: string;
   examLocation: string;
   qrCodeData: string;
