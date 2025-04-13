@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,7 +17,9 @@ const DigitalPermits = () => {
   const [selectedTimetable, setSelectedTimetable] = useState<string>("");
   const [studentIds, setStudentIds] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [permits, setPermits] = useState<ExamPermit[]>([]);
+  const [searchResults, setSearchResults] = useState<ExamPermit[]>([]);
   
   useEffect(() => {
     const fetchTimetables = async () => {
@@ -32,7 +33,7 @@ const DigitalPermits = () => {
         console.error("Error fetching timetables:", error);
         toast({
           title: "Error",
-          description: "Failed to load timetables",
+          description: "Failed to load timetables. Using mock data instead.",
           variant: "destructive"
         });
       } finally {
@@ -75,6 +76,7 @@ const DigitalPermits = () => {
     try {
       const generatedPermits = await api.generatePermits(selectedTimetable, studentIds);
       setPermits(generatedPermits);
+      setSearchResults(generatedPermits); // Also update search results
       
       toast({
         title: "Permits generated",
@@ -89,6 +91,69 @@ const DigitalPermits = () => {
       });
     } finally {
       setIsGenerating(false);
+    }
+  };
+  
+  const handleSearch = async (studentId: string, courseQuery: string) => {
+    setIsSearching(true);
+    
+    try {
+      // If searching by student ID
+      if (studentId) {
+        const studentPermits = await api.getStudentPermits(studentId);
+        
+        // If we also have a course query, filter further
+        if (courseQuery) {
+          const filteredPermits = studentPermits.filter(permit => 
+            permit.courseName.toLowerCase().includes(courseQuery.toLowerCase()) ||
+            permit.courseId.toLowerCase().includes(courseQuery.toLowerCase())
+          );
+          setSearchResults(filteredPermits);
+        } else {
+          setSearchResults(studentPermits);
+        }
+        
+        toast({
+          title: "Search complete",
+          description: `Found ${studentPermits.length} permits for student ID ${studentId}`
+        });
+      } 
+      // If searching by course only
+      else if (courseQuery) {
+        // For a complete implementation, this would call a backend API to search by course
+        // For now, we'll just filter the local permits
+        const filteredPermits = permits.filter(permit => 
+          permit.courseName.toLowerCase().includes(courseQuery.toLowerCase()) ||
+          permit.courseId.toLowerCase().includes(courseQuery.toLowerCase())
+        );
+        
+        setSearchResults(filteredPermits);
+        
+        toast({
+          title: "Search complete",
+          description: `Found ${filteredPermits.length} permits matching "${courseQuery}"`
+        });
+      }
+      // If no search criteria
+      else {
+        setSearchResults(permits);
+        
+        toast({
+          title: "Search cleared",
+          description: "Showing all permits"
+        });
+      }
+    } catch (error) {
+      console.error("Search error:", error);
+      toast({
+        title: "Search failed",
+        description: "Failed to search permits",
+        variant: "destructive"
+      });
+      
+      // Keep the previous search results on error
+    } finally {
+      setIsSearching(false);
     }
   };
   
@@ -135,8 +200,11 @@ const DigitalPermits = () => {
             </TabsContent>
             
             <TabsContent value="view">
-              <PermitSearchForm />
-              <PermitLibrary permits={permits} />
+              <PermitSearchForm 
+                onSearch={handleSearch}
+                isSearching={isSearching}
+              />
+              <PermitLibrary permits={searchResults} />
             </TabsContent>
           </Tabs>
         </div>
